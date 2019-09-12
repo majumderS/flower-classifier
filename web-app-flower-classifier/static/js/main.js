@@ -1,35 +1,40 @@
-$(document).ready( function() {
-    $(document).on('change', '.btn-file :file', function() {
-    var input = $(this),
-        label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-    input.trigger('fileselect', [label]);
-    });
+var el = x => document.getElementById(x);
 
-    $('.btn-file :file').on('fileselect', function(event, label) {
-        
-        var input = $(this).parents('.input-group').find(':text'),
-            log = label;
-        
-        if( input.length ) {
-            input.val(log);
-        } else {
-            if( log ) alert(log);
-        }
-    
-    });
-    function readURL(input) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            
-            reader.onload = function (e) {
-                $('#img-upload').attr('src', e.target.result);
-            }
-            
-            reader.readAsDataURL(input.files[0]);
-        }
+function showPicker() {
+  el("file-input").click();
+}
+
+function showPicked(input) {
+  el("upload-label").innerHTML = input.files[0].name;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    el("image-picked").src = e.target.result;
+    el("image-picked").className = "";
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function analyze() {
+  var uploadFiles = el("file-input").files;
+  if (uploadFiles.length !== 1) alert("Please select a file to analyze!");
+
+  el("analyze-button").innerHTML = "Analyzing...";
+  var xhr = new XMLHttpRequest();
+  var loc = window.location;
+  xhr.open("POST", `${loc.protocol}//${loc.hostname}:${loc.port}/analyze`,
+    true);
+  xhr.onerror = function() {
+    alert(xhr.responseText);
+  };
+  xhr.onload = function(e) {
+    if (this.readyState === 4) {
+      var response = JSON.parse(e.target.responseText);
+      el("result-label").innerHTML = `Result = ${response["result"]}`;
     }
+    el("analyze-button").innerHTML = "Analyze";
+  };
 
-    $("#imgInp").change(function(){
-        readURL(this);
-    }); 	
-});
+  var fileData = new FormData();
+  fileData.append("file", uploadFiles[0]);
+  xhr.send(fileData);
+}
